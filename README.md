@@ -3,4 +3,5 @@ This app allows for the easy viewing of any .npy array (a single 2D image, multi
 One can also upload a pretrained Convolutional Neural Network (CNN) in order to segment the uploaded images
 Area cropping is also available
 
-![alt text](app-image.png){:height="50%" width="50%"}
+![App Image](app-image.png)
+<img src="app-image.png" width="48">
