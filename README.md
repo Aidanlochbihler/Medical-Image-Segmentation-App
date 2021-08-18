@@ -4,4 +4,4 @@ One can also upload a pretrained Convolutional Neural Network (CNN) in order to 
 Area cropping is also available
 
 
-<img src="app-image.png" height="100%" width="100%">
+<img src="app-image.png" height="50%" width="50%">
