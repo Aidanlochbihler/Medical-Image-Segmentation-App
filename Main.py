@@ -570,10 +570,10 @@ class MainWindow(QtW.QMainWindow):
         if self.bound_on:
             if self.coords_confirmed:
                 
-                self.x_coord_final = None
-                self.y_coord_final = None
-                self.z_coord_start_final = None
-                self.z_coord_end_final = None
+                self.x_coord_final = 0
+                self.y_coord_final = 0
+                self.z_coord_start_final = 0
+                self.z_coord_end_final = 0
                 
             #Use the confirmed X,Y,Z to crop the numpy
             #**NOTE: will need self.z_coord_end_final+1 when actually croping
