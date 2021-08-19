@@ -361,7 +361,10 @@ class MainWindow(QtW.QMainWindow):
     def clear_coords(self):
         self.x_coord_final = None
         self.y_coord_final = None
+        self.z_coord_start_final = None
+        self.z_coord_end_final = None
         
+        self.coords_confirmed = False
         self.ax.clear()
         self.ax.imshow(self.canvas_image, cmap='gray', interpolation='none') 
         
@@ -481,6 +484,7 @@ class MainWindow(QtW.QMainWindow):
         self.label_model_open.adjustSize()
         print(self.model_path)
         
+        #THIS SHOULD BE ABLE TO BE ENTERED BY USER*******************
         obj = {'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef}
         #self.model = load_model(self.model_path, custom_objects= obj)
         self.model = tf.keras.models.load_model(self.model_path, custom_objects= obj)
@@ -547,27 +551,38 @@ class MainWindow(QtW.QMainWindow):
         
         
     def predict(self):
-        '''
-        if self.bound_on = True:
-            if self.coords_confirmed = True:
-            Use the confirmed X,Y,Z to crop the numpy
-            **NOTE: will need self.z_coord_end_final+1 when actually croping
-            else:
-                PopUp('Please Confirm Coords First')
-        else:
-            pass
-                
-        '''
+
         print('Predicting in Progress')
         dir_path = os.path.dirname(self.file_path)
-        
         imgs = np.load(self.file_path)
+
+        '''
+        Remove this the user should have the npy set up the way they want this
+        '''
         imgs = imgs.astype('float32')
         print('shape', imgs.shape)
         print('max pred', np.max(imgs))
         imgs /= 255
         
 
+
+        
+        if self.bound_on:
+            if self.coords_confirmed:
+                
+                self.x_coord_final = None
+                self.y_coord_final = None
+                self.z_coord_start_final = None
+                self.z_coord_end_final = None
+                
+            #Use the confirmed X,Y,Z to crop the numpy
+            #**NOTE: will need self.z_coord_end_final+1 when actually croping
+            else:
+                PopUp('Please Confirm Coords First')
+        else:
+            pass
+                
+        
 
         #pre = np.ndarray((total, image_rows, image_cols, channels), dtype=np.float32)
         self.pred = self.model.predict(imgs, batch_size=1)
