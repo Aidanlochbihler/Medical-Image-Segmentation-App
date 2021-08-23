@@ -554,8 +554,8 @@ class MainWindow(QtW.QMainWindow):
 
         print('Predicting in Progress')
         dir_path = os.path.dirname(self.file_path)
-        imgs = np.load(self.file_path)
-
+        #imgs = np.load(self.file_path)
+        imgs = self.image
         '''
         Remove this the user should have the npy set up the way they want this
         '''
@@ -563,17 +563,30 @@ class MainWindow(QtW.QMainWindow):
         print('shape', imgs.shape)
         print('max pred', np.max(imgs))
         imgs /= 255
+        x_left = self.x_coord_final-int(self.rectangle_shape_x/2)
+        x_right = self.x_coord_final+int(self.rectangle_shape_x/2)
+        y_top = self.y_coord_final-int(self.rectangle_shape_y/2)
+        y_bot = self.y_coord_final+int(self.rectangle_shape_y/2)
+        z_start = self.z_coord_start_final
+        z_end = self.z_coord_end_final
+
+        print(x_left, x_right, y_top, y_bot, z_start, z_end) #118 178 136 196 -1 0
         
-
-
         
         if self.bound_on:
             if self.coords_confirmed:
                 
-                self.x_coord_final = 0
-                self.y_coord_final = 0
-                self.z_coord_start_final = 0
-                self.z_coord_end_final = 0
+                if (self.arr_rank == 3): 
+                    self.slices = np.s_[y_top:y_bot,x_left:x_right,0] 
+        
+                elif (self.arr_rank == 4): 
+                    self.slices = np.s_[self.image_index, y_top:y_bot,x_left:x_right,0]
+
+                elif (self.arr_rank == 5): 
+                    self.slices = np.s_[self.volume_index,self.image_index, y_top:y_bot, x_left:x_right,0]
+                        
+                new_imgs = imgs
+
                 
             #Use the confirmed X,Y,Z to crop the numpy
             #**NOTE: will need self.z_coord_end_final+1 when actually croping
@@ -581,8 +594,17 @@ class MainWindow(QtW.QMainWindow):
                 PopUp('Please Confirm Coords First')
         else:
             pass
-                
         
+        self.canvas_image = self.image[self.slices]
+        self.ax.imshow(self.canvas_image, cmap='gray', interpolation='none') 
+        
+        self.ax.axis('off')
+        self.ax.axis(self.scale)
+        self.canvas.draw()             
+
+
+
+        exit()#######################################################################################################################
 
         #pre = np.ndarray((total, image_rows, image_cols, channels), dtype=np.float32)
         self.pred = self.model.predict(imgs, batch_size=1)
