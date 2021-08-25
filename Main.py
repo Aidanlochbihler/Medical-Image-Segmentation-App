@@ -145,6 +145,12 @@ class MainWindow(QtW.QMainWindow):
         self.btn_clear_coords.setStyleSheet(self.button_style)
         self.btn_clear_coords.clicked.connect(self.clear_coords)
         
+        self.zrange_checkbox = QCheckBox("Check to Crop in Z-Range",self)
+        #self.zrange_checkbox.stateChanged.connect(self.checkbox_clicked)
+        self.zrange_checkbox.setStyleSheet('QCheckBox{ background-color: white; border-style: outset; border-width: 1px; border-radius: 0px; border-color: black; font: bold 12px; min-width: 4em; padding: 2px;}')
+        self.zrange_checkbox.hide()
+
+        
         self.radio_boundon = QRadioButton("Boundary On")
         self.radio_boundon.toggled.connect(self.boundary_on)
         self.radio_boundon.setChecked(True)
@@ -153,6 +159,7 @@ class MainWindow(QtW.QMainWindow):
         self.radio_boundoff = QRadioButton("Boundary Off")
         self.radio_boundoff.toggled.connect(self.boundary_off)
         self.radio_boundoff.setStyleSheet('QRadioButton{ background-color: white; border-style: outset; border-width: 1px; border-radius: 2px; border-color: black; font: bold 12px; min-width: 4em; padding: 2px;}')
+
 
         self.label_list_box_images = QLabel('Images', self)
         self.list_box_images = QComboBox(self)
@@ -219,10 +226,15 @@ class MainWindow(QtW.QMainWindow):
         self.sidebar_layout.addSpacerItem(QSpacerItem(0, 80, QSizePolicy.Minimum, QSizePolicy.Expanding))
         
         self.sidebar_layout.addWidget(self.radio_boundon)
-        self.sidebar_layout.addSpacerItem(QSpacerItem(0, 100, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.sidebar_layout.addSpacerItem(QSpacerItem(0, 70, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.sidebar_layout.addWidget(self.radio_boundoff)
         
-        self.sidebar_layout.addSpacerItem(QSpacerItem(0, 100, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.sidebar_layout.addSpacerItem(QSpacerItem(0, 70, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        
+        self.sidebar_layout.addWidget(self.zrange_checkbox)
+        self.sidebar_layout.addSpacerItem(QSpacerItem(0, 70, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.zrange_checkbox.hide()
+        
         self.sidebar_layout.addWidget(self.btn_confirm_coords)
         self.sidebar_layout.addWidget(self.label_confirm_coords)
         
@@ -230,6 +242,7 @@ class MainWindow(QtW.QMainWindow):
         self.sidebar_layout.addSpacerItem(QSpacerItem(0, 90, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.sidebar_layout.addWidget(QHLine())
         self.sidebar_layout.addSpacerItem(QSpacerItem(0, 90, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        
         
         self.sidebar_layout.addWidget(self.label_list_box_images)
         self.sidebar_layout.addWidget(self.list_box_images)
@@ -303,17 +316,16 @@ class MainWindow(QtW.QMainWindow):
             self.ax.axis(self.scale)
             self.ax.scatter(x,y, c='r', s=40)
             
-            self.rectangle_shape_x = 60
-            self.rectangle_shape_y = 60
-            
             '''
-            #USE THIS FOR ACTUAL VERSION******
+            self.rectangle_shape_x = 60 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            self.rectangle_shape_y = 60
+            '''
+            
             try:
                 self.rectangle_shape_x = int(self.model_shape[2])
                 self.rectangle_shape_y = int(self.model_shape[1])
             except:
                 PopUp('Open A Model First ')
-            '''
     
             self.rectangle = plt.Rectangle((x-(self.rectangle_shape_x/2),y-(self.rectangle_shape_y /2)), self.rectangle_shape_x, self.rectangle_shape_y , fill=False, color = "red") 
             self.ax.add_patch(self.rectangle)
@@ -333,9 +345,7 @@ class MainWindow(QtW.QMainWindow):
         self.y_coord_final = self.y_coord_temp 
         
         
-        self.model_shape = (None, 2, 256, 256, 1)
-
-        if len(self.model_shape) <=4: #If the model is a rank less that or equal to 4 then it has no Z axis (ie its 2D images)
+        if len(self.model_shape) <=4 and not(self.zrange_checkbox.isChecked()): #If the model is a rank less that or equal to 4 then it has no Z axis (ie its 2D images)
             self.label_confirm_coords.setText("Boundary confirmed:\nX,Y Coords: (%3.2f, %3.2f)" % (self.x_coord_final, self.y_coord_final))
         else: #Else we need to predict 3D Volumes so a Z range equal to the size from the model will be used
             middle = self.z_coord_temp 
@@ -430,7 +440,7 @@ class MainWindow(QtW.QMainWindow):
         path = filename[0]
         self.file_path = path
         self.image = np.load(self.file_path)
-        #self.image = np.random.rand(5,4,256,256) #**TEST MULTI 3D IMAGES***
+        #self.image = np.random.rand(4,256,128) #**TEST MULTI 3D IMAGES***
         
         self.image_shape = self.image.shape
 
@@ -450,6 +460,8 @@ class MainWindow(QtW.QMainWindow):
         self.update_canvas_image()
         #-------------------Populates the List boxes and shows them if the case is right-------------------------
         if (self.arr_rank == 4): 
+            self.zrange_checkbox.show()
+
             list_items = [str(x) for x in range(self.image_shape[0])]
             self.list_box_images.addItems(list_items)
             self.label_list_box_images.show()
@@ -500,11 +512,13 @@ class MainWindow(QtW.QMainWindow):
             self.btn_confirm_coords.show()
             self.label_confirm_coords.show()
             self.btn_clear_coords.show()
+            self.zrange_checkbox.show()
             
     def boundary_off(self):
         radioButton = self.sender()
         if radioButton.isChecked():
             #print(radioButton.text())
+            self.zrange_checkbox.hide()
             self.bound_on = False
             self.btn_confirm_coords.hide()
             self.label_confirm_coords.hide()
@@ -549,66 +563,77 @@ class MainWindow(QtW.QMainWindow):
         self.label_z_coord.setText('Volume ' + str(self.volume_index)+', Image ' + str(self.image_index)) 
         self.update_canvas_image()
         
-        
     def predict(self):
 
         print('Predicting in Progress')
         dir_path = os.path.dirname(self.file_path)
         #imgs = np.load(self.file_path)
         imgs = self.image
-        '''
-        Remove this the user should have the npy set up the way they want this
-        '''
+        
+       # Remove this the user should have the npy set up the way they want this
+        
         imgs = imgs.astype('float32')
         print('shape', imgs.shape)
         print('max pred', np.max(imgs))
         imgs /= 255
-        x_left = self.x_coord_final-int(self.rectangle_shape_x/2)
-        x_right = self.x_coord_final+int(self.rectangle_shape_x/2)
-        y_top = self.y_coord_final-int(self.rectangle_shape_y/2)
-        y_bot = self.y_coord_final+int(self.rectangle_shape_y/2)
-        z_start = self.z_coord_start_final
-        z_end = self.z_coord_end_final
+        
 
-        print(x_left, x_right, y_top, y_bot, z_start, z_end) #118 178 136 196 -1 0
-        
-        
+
+
+
         if self.bound_on:
             if self.coords_confirmed:
+                x_left = self.x_coord_final-int(self.rectangle_shape_x/2)
+                x_right = self.x_coord_final+int(self.rectangle_shape_x/2)
+                y_top = self.y_coord_final-int(self.rectangle_shape_y/2)
+                y_bot = self.y_coord_final+int(self.rectangle_shape_y/2)
+                z_start = self.z_coord_start_final
+                z_end = self.z_coord_end_final
                 
                 if (self.arr_rank == 3): 
-                    self.slices = np.s_[y_top:y_bot,x_left:x_right,0] 
-        
+                    #self.slices = np.s_[y_top:y_bot,x_left:x_right,0] 
+                    
+                    imgs = imgs[y_top:y_bot,x_left:x_right,:]
+                    padding = ((y_top,(self.image_shape[0]-y_bot)),(x_left,(self.image_shape[1]-x_right)),(0,0))
+                    
                 elif (self.arr_rank == 4): 
-                    self.slices = np.s_[self.image_index, y_top:y_bot,x_left:x_right,0]
+                    #self.slices = np.s_[self.image_index, y_top:y_bot,x_left:x_right,0]
+                    
+                    if self.zrange_checkbox.isChecked(): #This means that it is a single 3D image
+                        print('Crop Z-range')
+                        imgs = imgs[z_start:z_end+1, y_top:y_bot+1,x_left:x_right+1,:]
+                        padding = ((z_start,self.image_shape[0]-z_end), (y_top,(self.image_shape[1]-y_bot)), (x_left,(self.image_shape[2]-x_right)),(0,0))
+                    else: #Multiple 2D Images so there is no need to crop through Z
+                        imgs = imgs[:, y_top:y_bot,x_left:x_right,:]
+                        padding = ((0,0), (y_top,(self.image_shape[1]-y_bot)), (x_left,(self.image_shape[2]-x_right)),(0,0))
+                    
 
                 elif (self.arr_rank == 5): 
-                    self.slices = np.s_[self.volume_index,self.image_index, y_top:y_bot, x_left:x_right,0]
-                        
-                new_imgs = imgs
+                    #self.slices = np.s_[self.volume_index,self.image_index, y_top:y_bot, x_left:x_right,0]
+                    
+                    padding = ((0,0), (z_start,self.image_shape[1]-z_end), (y_top,(self.image_shape[2]-y_bot)), (x_left,(self.image_shape[3]-x_right)),(0,0))
+                    imgs = imgs[:, z_start:z_end+1, y_top:y_bot,x_left:x_right,:]
 
-                
-            #Use the confirmed X,Y,Z to crop the numpy
-            #**NOTE: will need self.z_coord_end_final+1 when actually croping
             else:
                 PopUp('Please Confirm Coords First')
+            print('Cropped', imgs.shape)
+            print('Padding Value', padding)
+            print('Image Shape', imgs.shape)
         else:
             pass
         
-        self.canvas_image = self.image[self.slices]
-        self.ax.imshow(self.canvas_image, cmap='gray', interpolation='none') 
+
         
-        self.ax.axis('off')
-        self.ax.axis(self.scale)
-        self.canvas.draw()             
-
-
-
-        exit()#######################################################################################################################
-
-        #pre = np.ndarray((total, image_rows, image_cols, channels), dtype=np.float32)
+        
+        
         self.pred = self.model.predict(imgs, batch_size=1)
         self.pred = (self.pred > 0.1).astype('float32')
+        if self.bound_on:
+            if self.coords_confirmed:
+                self.pred = np.pad(self.pred, padding, 'constant', constant_values=(0)) #This padding will just be put on the mask
+        
+        print('Padded', self.pred.shape)
+        
         
         
         print('Prediction Complete', self.pred.shape)
@@ -623,7 +648,7 @@ class MainWindow(QtW.QMainWindow):
         self.ax.axis(self.scale)
         self.canvas.draw()
         
-        PopUp('Prediction Complete')
+        PopUp(f'Prediction Complete \nPredictions Saved At: {dir_path}/prediction.npy')
             
             
         
