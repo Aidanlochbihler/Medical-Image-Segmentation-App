@@ -1,3 +1,4 @@
+#python C:\Users\aidan\Desktop\Medical-Image-Segmentation-App\Main.py
 import sys
 import matplotlib
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -20,9 +21,11 @@ from PyQt5.QtWidgets import *
 from matplotlib import colors
 
 import tensorflow as tf
-
-gpus= tf.config.experimental.list_physical_devices('GPU') #IS NEEDED FOR VRAM OVERLOADS
-tf.config.experimental.set_memory_growth(gpus[0], True)
+try:
+    gpus= tf.config.experimental.list_physical_devices('GPU') #IS NEEDED FOR VRAM OVERLOADS
+    tf.config.experimental.set_memory_growth(gpus[0], True)
+except:
+    pass
 
 cmap1 = colors.ListedColormap(['none', 'red'])
 cmap2 = colors.ListedColormap(['none','green'])
@@ -316,11 +319,6 @@ class MainWindow(QtW.QMainWindow):
             self.ax.axis(self.scale)
             self.ax.scatter(x,y, c='r', s=40)
             
-            '''
-            self.rectangle_shape_x = 60 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            self.rectangle_shape_y = 60
-            '''
-            
             try:
                 self.rectangle_shape_x = int(self.model_shape[2])
                 self.rectangle_shape_y = int(self.model_shape[1])
@@ -436,73 +434,83 @@ class MainWindow(QtW.QMainWindow):
         self.canvas.draw()             
 
     def open_file(self):
-        filename = QFileDialog.getOpenFileName()
-        path = filename[0]
-        self.file_path = path
-        self.image = np.load(self.file_path)
-        #self.image = np.random.rand(4,256,128) #**TEST MULTI 3D IMAGES***
-        
-        self.image_shape = self.image.shape
-
-        if self.image_shape[-1] > 3: #This is used to account for the case of an image not having a color depth ex: (256,256) --> (256,256,1)
-            self.image = np.expand_dims(self.image, axis=-1)
-            self.image_shape = self.image.shape
-
-        if self.image_shape[0] == 1: #if npy has (1,256,256,1) --> (256,256,1)
-            self.image = np.squeeze(self.image, axis=0)
-            self.image_shape = self.image.shape
-        
-        self.arr_rank = len(self.image_shape)
-        
-        print(self.file_path)
-        self.overlay = False
-        self.image_index = 0
-        self.update_canvas_image()
-        #-------------------Populates the List boxes and shows them if the case is right-------------------------
-        if (self.arr_rank == 4): 
-            self.zrange_checkbox.show()
-
-            list_items = [str(x) for x in range(self.image_shape[0])]
-            self.list_box_images.addItems(list_items)
-            self.label_list_box_images.show()
-            self.list_box_images.show()
-            self.case = 0
-        #Case: (n, p, 256,256,1) Multiple 3D images SPECIAL CASE
-        elif (self.arr_rank == 5): 
-            list_items = [str(x) for x in range(self.image_shape[1])]
-            self.list_box_images.addItems(list_items)
-            self.label_list_box_images.show()
-            self.list_box_images.show()
+        try :
             
-            list_items = [str(x) for x in range(self.image_shape[0])]
-            self.list_box_volumes.addItems(list_items)
-            self.label_list_box_volumes.show()
-            self.list_box_volumes.show()
-            self.case = 1
-        #---------------------------------------------------------------------------------------------------------    
-        
-        self.label_file_open.setText('Image File Path: '+ self.file_path)
-        self.label_file_open.adjustSize()
-        self.label_z_coord.setText('Volume ' + str(self.volume_index)+', Image ' + str(self.image_index)) 
-        self.label_z_coord.adjustSize()
-        
+            filename = QFileDialog.getOpenFileName()
+            path = filename[0]
+            self.file_path = path
+            self.image = np.load(self.file_path)
+            self.image = np.random.rand(8,4,256,128) #**TEST MULTI 3D IMAGES***
+            
+            self.image_shape = self.image.shape
+
+            if self.image_shape[-1] > 3: #This is used to account for the case of an image not having a color depth ex: (256,256) --> (256,256,1)
+                self.image = np.expand_dims(self.image, axis=-1)
+                self.image_shape = self.image.shape
+
+            if self.image_shape[0] == 1: #if npy has (1,256,256,1) --> (256,256,1)
+                self.image = np.squeeze(self.image, axis=0)
+                self.image_shape = self.image.shape
+            
+            self.arr_rank = len(self.image_shape)
+            
+            print(self.file_path)
+            self.overlay = False
+            self.image_index = 0
+            self.update_canvas_image()
+            #-------------------Populates the List boxes and shows them if the case is right-------------------------
+            if (self.arr_rank == 4): 
+                self.zrange_checkbox.show()
+
+                list_items = [str(x) for x in range(self.image_shape[0])]
+                self.list_box_images.addItems(list_items)
+                self.label_list_box_images.show()
+                self.list_box_images.show()
+                self.case = 0
+            #Case: (n, p, 256,256,1) Multiple 3D images SPECIAL CASE
+            elif (self.arr_rank == 5): 
+                list_items = [str(x) for x in range(self.image_shape[1])]
+                self.list_box_images.addItems(list_items)
+                self.label_list_box_images.show()
+                self.list_box_images.show()
+                
+                list_items = [str(x) for x in range(self.image_shape[0])]
+                self.list_box_volumes.addItems(list_items)
+                self.label_list_box_volumes.show()
+                self.list_box_volumes.show()
+                self.case = 1
+            #---------------------------------------------------------------------------------------------------------    
+            
+            self.label_file_open.setText('Image File Path: '+ self.file_path)
+            self.label_file_open.adjustSize()
+            self.label_z_coord.setText('Volume ' + str(self.volume_index)+', Image ' + str(self.image_index)) 
+            self.label_z_coord.adjustSize()
+        except Exception as error:
+           error_string = repr(error)
+           PopUp(error_string)
+           print(error_string)
+            
         
         
     def open_model(self):
-        filename = QFileDialog.getOpenFileName()
-        path = filename[0]
-        self.model_path = path
-        self.label_model_open.setText('Model File Path: '+ self.model_path)
-        self.label_model_open.adjustSize()
-        print(self.model_path)
-        
-        #THIS SHOULD BE ABLE TO BE ENTERED BY USER*******************
-        obj = {'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef}
-        #self.model = load_model(self.model_path, custom_objects= obj)
-        self.model = tf.keras.models.load_model(self.model_path, custom_objects= obj)
-        
-        self.model_shape = self.model.layers[0].get_output_at(0).get_shape().as_list()
-        print('Model Input Shape:', self.model_shape)
+        try:
+            filename = QFileDialog.getOpenFileName()
+            path = filename[0]
+            self.model_path = path
+            self.label_model_open.setText('Model File Path: '+ self.model_path)
+            self.label_model_open.adjustSize()
+            print(self.model_path)
+            
+            #THIS SHOULD BE ABLE TO BE ENTERED BY USER*******************
+            obj = {'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef}
+            self.model = tf.keras.models.load_model(self.model_path, custom_objects= obj)
+            
+            self.model_shape = self.model.layers[0].get_output_at(0).get_shape().as_list()
+            print('Model Input Shape:', self.model_shape)
+        except Exception as error:
+           error_string = repr(error)
+           PopUp(error_string)
+           print(error_string)
 
     def boundary_on(self):
         radioButton = self.sender()
@@ -564,113 +572,107 @@ class MainWindow(QtW.QMainWindow):
         self.update_canvas_image()
         
     def predict(self):
+        try:
+            print('Predicting in Progress')
+            dir_path = os.path.dirname(self.file_path)
+            imgs = self.image
+            
+        # Remove this the user should have the npy set up the way they want this
+            
+            imgs = imgs.astype('float32')
+            print('shape', imgs.shape)
+            print('max pred', np.max(imgs))
+            imgs /= 255
+        #####################################################
 
-        print('Predicting in Progress')
-        dir_path = os.path.dirname(self.file_path)
-        #imgs = np.load(self.file_path)
-        imgs = self.image
-        
-       # Remove this the user should have the npy set up the way they want this
-        
-        imgs = imgs.astype('float32')
-        print('shape', imgs.shape)
-        print('max pred', np.max(imgs))
-        imgs /= 255
-        
-
-
-
-
-        if self.bound_on:
-            if self.coords_confirmed:
-                x_left = self.x_coord_final-int(self.rectangle_shape_x/2)
-                x_right = self.x_coord_final+int(self.rectangle_shape_x/2)
-                y_top = self.y_coord_final-int(self.rectangle_shape_y/2)
-                y_bot = self.y_coord_final+int(self.rectangle_shape_y/2)
-                z_start = self.z_coord_start_final
-                z_end = self.z_coord_end_final
-                
-                if (self.arr_rank == 3): 
-                    #self.slices = np.s_[y_top:y_bot,x_left:x_right,0] 
+            if self.bound_on:
+                if self.coords_confirmed:
+                    x_left = self.x_coord_final-int(self.rectangle_shape_x/2)
+                    x_right = self.x_coord_final+int(self.rectangle_shape_x/2)
+                    y_top = self.y_coord_final-int(self.rectangle_shape_y/2)
+                    y_bot = self.y_coord_final+int(self.rectangle_shape_y/2)
+                    z_start = self.z_coord_start_final
+                    z_end = self.z_coord_end_final
                     
-                    imgs = imgs[y_top:y_bot,x_left:x_right,:]
-                    padding = ((y_top,(self.image_shape[0]-y_bot)),(x_left,(self.image_shape[1]-x_right)),(0,0))
-                    
-                elif (self.arr_rank == 4): 
-                    #self.slices = np.s_[self.image_index, y_top:y_bot,x_left:x_right,0]
-                    
-                    if self.zrange_checkbox.isChecked(): #This means that it is a single 3D image
-                        print('Crop Z-range')
-                        imgs = imgs[z_start:z_end+1, y_top:y_bot+1,x_left:x_right+1,:]
-                        padding = ((z_start,self.image_shape[0]-z_end), (y_top,(self.image_shape[1]-y_bot)), (x_left,(self.image_shape[2]-x_right)),(0,0))
-                    else: #Multiple 2D Images so there is no need to crop through Z
-                        imgs = imgs[:, y_top:y_bot,x_left:x_right,:]
-                        padding = ((0,0), (y_top,(self.image_shape[1]-y_bot)), (x_left,(self.image_shape[2]-x_right)),(0,0))
-                    
+                    if (self.arr_rank == 3): 
+                        #self.slices = np.s_[y_top:y_bot,x_left:x_right,0] 
+                        
+                        imgs = imgs[y_top:y_bot,x_left:x_right,:]
+                        padding = ((y_top,(self.image_shape[0]-y_bot)),(x_left,(self.image_shape[1]-x_right)),(0,0))
+                        
+                    elif (self.arr_rank == 4): 
+                        #self.slices = np.s_[self.image_index, y_top:y_bot,x_left:x_right,0]
+                        
+                        if self.zrange_checkbox.isChecked(): #This means that it is a single 3D image
+                            print('Crop Z-range')
+                            imgs = imgs[z_start:z_end+1, y_top:y_bot+1,x_left:x_right+1,:]
+                            padding = ((z_start,self.image_shape[0]-z_end), (y_top,(self.image_shape[1]-y_bot)), (x_left,(self.image_shape[2]-x_right)),(0,0))
+                        else: #Multiple 2D Images so there is no need to crop through Z
+                            imgs = imgs[:, y_top:y_bot,x_left:x_right,:]
+                            padding = ((0,0), (y_top,(self.image_shape[1]-y_bot)), (x_left,(self.image_shape[2]-x_right)),(0,0))
+                        
 
-                elif (self.arr_rank == 5): 
-                    #self.slices = np.s_[self.volume_index,self.image_index, y_top:y_bot, x_left:x_right,0]
-                    
-                    padding = ((0,0), (z_start,self.image_shape[1]-z_end), (y_top,(self.image_shape[2]-y_bot)), (x_left,(self.image_shape[3]-x_right)),(0,0))
-                    imgs = imgs[:, z_start:z_end+1, y_top:y_bot,x_left:x_right,:]
+                    elif (self.arr_rank == 5): 
+                        #self.slices = np.s_[self.volume_index,self.image_index, y_top:y_bot, x_left:x_right,0]
+                        
+                        padding = ((0,0), (z_start,self.image_shape[1]-z_end), (y_top,(self.image_shape[2]-y_bot)), (x_left,(self.image_shape[3]-x_right)),(0,0))
+                        imgs = imgs[:, z_start:z_end+1, y_top:y_bot,x_left:x_right,:]
 
+                else:
+                    PopUp('Please Confirm Coords First')
+                print('Cropped', imgs.shape)
+                print('Padding Value', padding)
+                print('Image Shape', imgs.shape)
             else:
-                PopUp('Please Confirm Coords First')
-            print('Cropped', imgs.shape)
-            print('Padding Value', padding)
-            print('Image Shape', imgs.shape)
-        else:
-            pass
-        
+                pass
+            
+            self.pred = self.model.predict(imgs, batch_size=1)
+            self.pred = (self.pred > 0.1).astype('float32')
+            if self.bound_on:
+                if self.coords_confirmed:
+                    self.pred = np.pad(self.pred, padding, 'constant', constant_values=(0)) #This padding will just be put on the mask
+            
+            print('Padded', self.pred.shape)
+            
+            
+            
+            print('Prediction Complete', self.pred.shape)
+            np.save(dir_path + '/prediction.npy', self.pred)
+                
+            self.overlay = True
+            self.pred_image = self.pred[self.image_index,:,:,0]
+                
+            self.ax.imshow(self.canvas_image, cmap='gray', interpolation='none') 
+            self.ax.imshow(self.pred_image, cmap=cmap1, alpha = 0.4)
+            self.ax.axis('off')
+            self.ax.axis(self.scale)
+            self.canvas.draw()
 
-        
-        
-        
-        self.pred = self.model.predict(imgs, batch_size=1)
-        self.pred = (self.pred > 0.1).astype('float32')
-        if self.bound_on:
-            if self.coords_confirmed:
-                self.pred = np.pad(self.pred, padding, 'constant', constant_values=(0)) #This padding will just be put on the mask
-        
-        print('Padded', self.pred.shape)
-        
-        
-        
-        print('Prediction Complete', self.pred.shape)
-        np.save(dir_path + '/prediction.npy', self.pred)
-            
-        self.overlay = True
-        self.pred_image = self.pred[self.image_index,:,:,0]
-            
-        self.ax.imshow(self.canvas_image, cmap='gray', interpolation='none') 
-        self.ax.imshow(self.pred_image, cmap=cmap1, alpha = 0.4)
-        self.ax.axis('off')
-        self.ax.axis(self.scale)
-        self.canvas.draw()
-        
-        PopUp(f'Prediction Complete \nPredictions Saved At: {dir_path}/prediction.npy')
+        except Exception as error:
+           error_string = repr(error)
+           PopUp(error_string)
+           print(error_string)
             
             
         
         
 if __name__ == '__main__':
+
     app = QtCore.QCoreApplication.instance()
     if app is None: app = QtW.QApplication(sys.argv)
     win = MainWindow()
     app.aboutToQuit.connect(app.deleteLater)
     app.exec_()
-    
 
 
 '''
-Can you this to catch errors and Print in message box instead of crashing the whole app
-import traceback
-
-try:
+try :
     1/0
-except Exception:
-    traceback.print_exc()
 
+except Exception as error:
+   error_string = repr(error)
+   print(error_string)
+    
 '''
 
 
