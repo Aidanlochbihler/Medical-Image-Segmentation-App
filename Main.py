@@ -412,7 +412,7 @@ class MainWindow(QtW.QMainWindow):
         #Case: (256,256,1) One 2D images
         self.ax.clear()
         if (self.arr_rank == 3): 
-            print('Case 0:', self.image_shape)
+            #print('Case 0:', self.image_shape)
             if self.image_shape[-1] == 1:
                 self.slices = np.s_[:,:,0] 
             else:
@@ -422,7 +422,7 @@ class MainWindow(QtW.QMainWindow):
 
         #Case: (n,256,256,1) Multiple 2D images
         elif (self.arr_rank == 4): 
-            print('Case 1:', self.image_shape)
+            #print('Case 1:', self.image_shape)
             if self.image_shape[-1] == 1:
                 self.slices = np.s_[self.image_index,:,:,0]
             else:
@@ -430,7 +430,7 @@ class MainWindow(QtW.QMainWindow):
             
         #Case: (n, p, 256,256,1) Multiple 3D images SPECIAL CASE
         elif (self.arr_rank == 5): 
-            print('Case 2:', self.image_shape)
+            #print('Case 2:', self.image_shape)
 
             if self.image_shape[-1] == 1:
                 self.slices = np.s_[self.volume_index,self.image_index,:,:,0]
@@ -555,25 +555,35 @@ class MainWindow(QtW.QMainWindow):
 
 
     def press_arrow_right(self):
-        print('Right', self.image.shape[self.arr_rank-4])
-        if self.image_index < (self.image.shape[self.arr_rank-4]-1):
-            self.image_index += 1
-            self.label_z_coord.setText('Image '+ str(self.image_index)) 
-            self.label_z_coord.adjustSize()
-            self.label_z_coord.setAlignment(Qt.AlignCenter)
-        
-        self.update_canvas_image()
+        try:
+            #print('Right', self.image.shape[self.arr_rank-4])
+            if self.image_index < (self.image.shape[self.arr_rank-4]-1):
+                self.image_index += 1
+                self.label_z_coord.setText('Image '+ str(self.image_index)) 
+                self.label_z_coord.adjustSize()
+                self.label_z_coord.setAlignment(Qt.AlignCenter)
+            
+            self.update_canvas_image()
+        except Exception as error:
+           error_string = repr(error)
+           PopUp(error_string)
+           print(error_string)
         
     def press_arrow_left(self):
-        print('Left')
-        if self.image_index > 0:
-            self.image_index -= 1
-            self.label_z_coord.setText('Image '+ str(self.image_index)) 
-            self.label_z_coord.adjustSize()
-            self.label_z_coord.setAlignment(Qt.AlignCenter)
-            
-            
-        self.update_canvas_image()
+        #print('Left')
+        try:
+            if self.image_index > 0:
+                self.image_index -= 1
+                self.label_z_coord.setText('Image '+ str(self.image_index)) 
+                self.label_z_coord.adjustSize()
+                self.label_z_coord.setAlignment(Qt.AlignCenter)
+                
+                
+            self.update_canvas_image()
+        except Exception as error:
+           error_string = repr(error)
+           PopUp(error_string)
+           print(error_string)
         
     def onclick_list_box_images(self):
         print(int(self.list_box_images.currentText()))
