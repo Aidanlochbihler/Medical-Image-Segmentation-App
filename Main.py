@@ -320,8 +320,17 @@ class MainWindow(QtW.QMainWindow):
             self.ax.scatter(x,y, c='r', s=40)
             
             try:
-                self.rectangle_shape_x = int(self.model_shape[2])
-                self.rectangle_shape_y = int(self.model_shape[1])
+                if (self.arr_rank == 3): 
+                    self.rectangle_shape_x = int(self.model_shape[1])
+                    self.rectangle_shape_y = int(self.model_shape[0])
+                #Case: (n,256,256,1) Multiple 2D images
+                elif (self.arr_rank == 4): 
+                    self.rectangle_shape_x = int(self.model_shape[2])
+                    self.rectangle_shape_y = int(self.model_shape[1])
+                #Case: (n, p, 256,256,1) Multiple 3D images SPECIAL CASE
+                elif (self.arr_rank == 5): 
+                    self.rectangle_shape_x = int(self.model_shape[3])
+                    self.rectangle_shape_y = int(self.model_shape[2])
             except:
                 PopUp('Open A Model First ')
     
@@ -339,54 +348,65 @@ class MainWindow(QtW.QMainWindow):
             pass
         
     def confirm_coords(self):
-        self.x_coord_final = self.x_coord_temp #Variables used to hold the confirmed coords of the clicked position
-        self.y_coord_final = self.y_coord_temp 
-        
-        
-        if len(self.model_shape) <=4 and not(self.zrange_checkbox.isChecked()): #If the model is a rank less that or equal to 4 then it has no Z axis (ie its 2D images)
-            self.label_confirm_coords.setText("Boundary confirmed:\nX,Y Coords: (%3.2f, %3.2f)" % (self.x_coord_final, self.y_coord_final))
-        else: #Else we need to predict 3D Volumes so a Z range equal to the size from the model will be used
-            middle = self.z_coord_temp 
-            z_leng = self.model_shape[1]
+        try:
+            self.x_coord_final = self.x_coord_temp #Variables used to hold the confirmed coords of the clicked position
+            self.y_coord_final = self.y_coord_temp 
             
-            if (z_leng % 2):
-                self.z_coord_start_final = middle-int(z_leng/2)
-                self.z_coord_end_final = middle+int(z_leng/2)
-                print('bottom: ', self.z_coord_start_final, ' top: ', self.z_coord_end_final)
+            
+            if len(self.model_shape) <=4 and not(self.zrange_checkbox.isChecked()): #If the model is a rank less that or equal to 4 then it has no Z axis (ie its 2D images)
+                self.label_confirm_coords.setText("Boundary confirmed:\nX,Y Coords: (%3.2f, %3.2f)" % (self.x_coord_final, self.y_coord_final))
+            else: #Else we need to predict 3D Volumes so a Z range equal to the size from the model will be used
+                middle = self.z_coord_temp 
+                z_leng = self.model_shape[1]
                 
-            else:
-                self.z_coord_start_final = middle-int(z_leng/2)
-                self.z_coord_end_final = middle+int(z_leng/2)-1
-                print('bottom: ', self.z_coord_start_final, ' top: ', self.z_coord_end_final)
+                if (z_leng % 2):
+                    self.z_coord_start_final = middle-int(z_leng/2)
+                    self.z_coord_end_final = middle+int(z_leng/2)
+                    print('bottom: ', self.z_coord_start_final, ' top: ', self.z_coord_end_final)
+                    
+                else:
+                    self.z_coord_start_final = middle-int(z_leng/2)
+                    self.z_coord_end_final = middle+int(z_leng/2)-1
+                    print('bottom: ', self.z_coord_start_final, ' top: ', self.z_coord_end_final)
 
-            self.label_confirm_coords.setText("Boundary confirmed: \nZ-Range: (%3.2f, %3.2f) \nX,Y Coords: (%3.2f, %3.2f)" % (self.z_coord_start_final, self.z_coord_end_final, self.x_coord_final, self.y_coord_final))
-
+                self.label_confirm_coords.setText("Boundary confirmed: \nZ-Range: (%3.2f, %3.2f) \nX,Y Coords: (%3.2f, %3.2f)" % (self.z_coord_start_final, self.z_coord_end_final, self.x_coord_final, self.y_coord_final))
+        except Exception as error:
+           error_string = repr(error)
+           PopUp(error_string)
+           print(error_string)
     
 
         self.coords_confirmed = True
         self.label_confirm_coords.adjustSize()
         
     def clear_coords(self):
-        self.x_coord_final = None
-        self.y_coord_final = None
-        self.z_coord_start_final = None
-        self.z_coord_end_final = None
-        
-        self.coords_confirmed = False
-        self.ax.clear()
-        self.ax.imshow(self.canvas_image, cmap='gray', interpolation='none') 
-        
-        if self.overlay: 
-            self.pred_image = self.pred[self.image_index,:,:,0]
-            self.ax.imshow(self.pred_image, cmap=cmap1, alpha = 0.4) 
+        try:
+            self.x_coord_final = None
+            self.y_coord_final = None
+            self.z_coord_start_final = None
+            self.z_coord_end_final = None
             
-        self.ax.axis('off')
-        self.ax.axis(self.scale)
-        self.canvas.draw()
+            self.coords_confirmed = False
+
+            self.ax.clear()
+            self.canvas_image = self.image[self.slices]
+            self.ax.imshow(self.canvas_image, cmap='gray', interpolation='none') 
+
+            if self.overlay: 
+                self.pred_image = self.pred[self.slices]
+                self.ax.imshow(self.pred_image, cmap=cmap1, alpha = 0.4) 
+            
+            self.ax.axis('off')
+            self.ax.axis(self.scale)
+            self.canvas.draw()     
+                
+            self.label_confirm_coords.setText("")
+            self.label_confirm_coords.adjustSize()
+        except Exception as error:
+           error_string = repr(error)
+           PopUp(error_string)
+           print(error_string)
         
-        self.label_confirm_coords.setText("")
-        self.label_confirm_coords.adjustSize()
-    
 
     def update_canvas_image(self):
         #Case: (256,256,1) One 2D images
@@ -440,7 +460,7 @@ class MainWindow(QtW.QMainWindow):
             path = filename[0]
             self.file_path = path
             self.image = np.load(self.file_path)
-            self.image = np.random.rand(8,4,256,128) #**TEST MULTI 3D IMAGES***
+            #self.image = np.random.rand(8,4,256,128) #**TEST MULTI 3D IMAGES***
             
             self.image_shape = self.image.shape
 
@@ -578,11 +598,12 @@ class MainWindow(QtW.QMainWindow):
             imgs = self.image
             
         # Remove this the user should have the npy set up the way they want this
-            
+            '''
             imgs = imgs.astype('float32')
             print('shape', imgs.shape)
             print('max pred', np.max(imgs))
             imgs /= 255
+            '''
         #####################################################
 
             if self.bound_on:
@@ -635,18 +656,19 @@ class MainWindow(QtW.QMainWindow):
             print('Padded', self.pred.shape)
             
             
-            
-            print('Prediction Complete', self.pred.shape)
+
             np.save(dir_path + '/prediction.npy', self.pred)
                 
             self.overlay = True
-            self.pred_image = self.pred[self.image_index,:,:,0]
+            self.pred_image = self.pred[self.slices] #############
                 
             self.ax.imshow(self.canvas_image, cmap='gray', interpolation='none') 
             self.ax.imshow(self.pred_image, cmap=cmap1, alpha = 0.4)
             self.ax.axis('off')
             self.ax.axis(self.scale)
             self.canvas.draw()
+            PopUp('Prediction Complete')
+            print('Prediction Complete', self.pred.shape)
 
         except Exception as error:
            error_string = repr(error)
